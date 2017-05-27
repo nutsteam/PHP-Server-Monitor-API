@@ -10,7 +10,11 @@
         */
         public function loginWithPostData($email, $app_password) {
 
-            $user = User::where('email', $email)->first();
+            if (strpos($email, "@")) {
+                $user = User::where('email', $email)->first();
+            } else {
+                $user = User::where('user_name', $email)->first();
+            }
 
             if($user) {
                 if(password_verify($app_password, $user->password)) {
