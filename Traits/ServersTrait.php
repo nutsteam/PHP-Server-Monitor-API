@@ -22,17 +22,43 @@
          * @param type $user_id
          * @return boolean
          */
-        public function getMonitorStatusByUserID($user_id) {
-            return DB::table('servers AS a')
-                ->select('b.server_id', 'b.user_id')
-                ->selectRaw(sprintf('COUNT(%sa.server_id) as servercount', DB::getTablePrefix()))
-                ->selectRaw(sprintf('COUNT(if(%1$sa.status = "on" , %1$sa.status, NULL)) AS statusoncount'  , DB::getTablePrefix()))
-                ->selectRaw(sprintf('COUNT(if(%1$sa.status = "off", %1$sa.status, NULL)) AS statusoffcount' , DB::getTablePrefix()))
-                ->selectRaw(sprintf('COUNT(if(%1$sa.active = "no" , %1$sa.active, NULL)) AS activecount'    , DB::getTablePrefix()))
-                ->selectRaw(sprintf('COUNT(if(%1$sa.email  = "yes", %1$sa.email , NULL)) AS emailalertcount', DB::getTablePrefix()))
-                ->join('users_servers AS b', 'b.server_id', '=', 'a.server_id')
-                ->where('b.user_id', $user_id)
-                ->first();
+        public function getMonitorStatusByUserID($user_id, $isAdmin=false) {
+
+            $result = [
+                "servercount"       =>0,
+                "statusoncount"     =>0,
+                "statusoffcount"    =>0,
+                "activecount"       =>0,
+                "emailalertcount"   =>0,
+            ];
+
+
+            $server_ids = [];
+            if (! $isAdmin) {
+                $res = DB::table('users_servers')->select("server_id")->where("user_id", $user_id)->get();
+                foreach ($res as $key => $value) {
+                    $server_ids[] = $value->server_id;
+                }
+
+                if (count($server_ids) == 0) {
+                    return $result;
+                }
+            }
+
+            $where = count($server_ids) ? sprintf("server_id in (%s)", join(",", $server_ids)) : "1";
+
+            $result["servercount"] = DB::table('servers')->selectRaw($where)->count();
+
+            if ($result["servercount"] == 0) {
+                return $result;
+            }
+
+            $result["statusoncount"]   = DB::table('servers')->whereRaw("{$where} AND status = 'on'")->count();
+            $result["statusoffcount"]  = DB::table('servers')->whereRaw("{$where} AND status = 'off'")->count();
+            $result["activecount"]     = DB::table('servers')->whereRaw("{$where} AND active = 'no'")->count();
+            $result["emailalertcount"] = DB::table('servers')->whereRaw("{$where} AND email = 'yes' OR sms = 'yes'")->count();
+
+            return $result;
         }
 
         /**

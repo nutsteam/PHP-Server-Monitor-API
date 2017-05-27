@@ -56,8 +56,9 @@ header('Content-Type: application/json');
         $app_password = $_GET['app_password'];
         $devicetoken = $_GET['devicetoken'];
         $phone_type =$_GET['phone_type'];
-            // check for user
-            $user = $db->loginWithPostData($email, $app_password);
+
+        // check for user
+        $user = $db->loginWithPostData($email, $app_password);
         if ($user != false) {
             
             /* 

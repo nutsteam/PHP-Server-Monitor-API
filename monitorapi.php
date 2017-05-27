@@ -103,8 +103,9 @@ header('Content-Type: application/json');
             * User found
             * Call Get overall status using User ID
             * Only using user id to get server status. Becuase we have already validated user.
+            * User level == 10 is admin, get all servers
             */
-            $servers = $db->getMonitorStatusByUserID($user_id);
+            $servers = $db->getMonitorStatusByUserID($user_id, $user["level"] == 10);
             if ($servers != false) {
                 $response["success"] = 1;
                 $response["server"]=$servers;
